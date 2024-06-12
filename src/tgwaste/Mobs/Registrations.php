@@ -9,6 +9,8 @@ use pocketmine\entity\EntityDataHelper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\world\World;
+use pocketmine\item\SpawnEgg;
+
 use tgwaste\Mobs\Entities\Bat;
 use tgwaste\Mobs\Entities\Blaze;
 use tgwaste\Mobs\Entities\Cat;
@@ -64,6 +66,11 @@ class Registrations {
 				},
 			[$entityName]);
 		}
+	}
+
+	public static function registerSpawnEggs($player) {
+		$inv = $player->getCreativeInventory();
+		$inv->add(new SpawnEgg());
 	}
 
 	public function getClasses() : array {
