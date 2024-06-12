@@ -1,14 +1,18 @@
 ---
 # whether mobs spawn at all
 spawnmobs: true
+# allow mob drops
+mobdrops: true
+# allow mob exp drops
+mobexp: true
 # write spawn/despawn messages to the console
 # this is noisy and mostly for debugging
 spawnmsgs: false
 # show name tags and health percent if percent is less than 100
 damagetags: true
-# regain this much health over time when idle
-# setting to 0 disables
-regainhealth: 1
+# how fast mobs regain health
+# 1 is normal, setting to 0 disables
+regainhealthmultiplier: 1
 # mobs will not spawn in any worldname containing one of these strings
 nospawn:
 - arena
