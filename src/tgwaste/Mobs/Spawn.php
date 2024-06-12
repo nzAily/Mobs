@@ -4,158 +4,112 @@ declare(strict_types=1);
 
 namespace tgwaste\Mobs;
 
-use pocketmine\block\Water;
-use pocketmine\entity\Location;
-use pocketmine\math\Vector3;
+use pocketmine\entity\Entity;
+use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\entity\EntityDespawnEvent;
+use pocketmine\event\entity\EntityDeathEvent;
+use pocketmine\event\entity\EntitySpawnEvent;
+use pocketmine\event\player\PlayerItemUseEvent;
 use pocketmine\player\Player;
-use pocketmine\world\World;
-use tgwaste\Mobs\Entities\MobsEntity;
+use pocketmine\item\StringToItemParser;
+use tgwaste\Mobs\Entities\Cow;
+use tgwaste\Mobs\Registrations;
 
-class Spawn {
-	public function spawnMobs() {
-		if (Main::$instance->spawnmobs == null or Main::$instance->spawnmobs == false) {
-			return;
-		}
 
-		foreach (Main::$instance->getServer()->getWorldManager()->getWorlds() as $world) {
-			if ($this->isNoSpawn($world) == true) {
-				# spawning is not allowed in this world
-				continue;
-			}
-
-			$positions = [];
-
-			for ($i = 0; $i < 20; $i++) {
-				foreach ($world->getPlayers() as $player) {
-					$positions[] = Main::$instance->coordsobj->getSaferSpawn($player->getPosition(), $world, 100);
-				}
-			}
-
-			foreach ($positions as $pos) {
-				$biome = $world->getBiome((int)$pos->x, (int)$pos->y, (int)$pos->z)->getName();
-				$daytime = Main::$instance->toolsobj->isDayTime($world);
-
-				if ($daytime == false and mt_rand(1, 100) >= 20) {
-					$mobtable = Main::$instance->biomesobj->getNightMobsForBiome($biome);
-				} else {
-					$mobtable = Main::$instance->biomesobj->getMobsForBiome($biome);
-				}
-
-				foreach ($mobtable as $mobname) {
-					$total = 0;
-
-					foreach ($world->getEntities() as $entity) {
-						if (method_exists($entity, "getName") and $entity->getName() === $mobname) {
-							$total += 1;
-						}
-					}
-
-					$allowed = Main::$instance->getConfig()->get($mobname, 3);
-
-					$max = $allowed - $total;
-
-					if ($max < 1) {
-						continue;
-					}
-
-					while ($max > 0) {
-						$newpos = Main::$instance->coordsobj->getSaferSpawn($pos, $world, 8);
-						$this->spawnEntity($mobname, $world, $newpos);
-						$max--;
-					}
-
-					break;
-				}
-			}
-		}
+class Listen implements Listener {
+	public function onPlayerJoinEvent(PlayerJoinEvent $event) {
+		//Registrations::registerSpawnEggs($event->getPlayer());
+		// to be added in the future
 	}
-
-	public function deSpawnMobs() {
-		foreach (Main::$instance->getServer()->getWorldManager()->getWorlds() as $world) {
-			foreach ($world->getEntities() as $entity) {
-				if (!method_exists($entity, "getName")) {
-					continue;
-				}
-
-				if ($entity instanceof Player) {
-					continue;
-				}
-
-				if (!$entity instanceof MobsEntity) {
-					continue;
-				}
-
-				$near = false;
-				$worldname = $world->getFolderName();
-				$mobname = $entity->getName();
-				$block = $entity->getWorld()->getBlock($entity->getPosition()->subtract(0, 1, 0));
-				$swimming = Main::$instance->attrobj->isSwimming($mobname);
-
-				if ($this->isNoSpawn($world) == true) {
-					# spawning is not allowed in this world
-					$entity->setNameTag("Spawning is not allowed in this world");
-					$entity->kill();
-					continue;
-				}
-
-				if ($swimming == false and ($block instanceof Water or $entity->isUnderwater())) {
-					# this entity should not be in the water
-					$entity->setNameTag("Not allowed in water");
-					$entity->kill();
-					continue;
-				}
-
-				if (count($world->getPlayers()) < 1) {
-					# there are no players in this world
-					$entity->setNameTag("No players in $worldname");
-					$entity->kill();
-					continue;
-				}
-
-				foreach ($world->getPlayers() as $p) {
-					foreach ($p->getWorld()->getNearbyEntities($p->getBoundingBox()->expandedCopy(100, 100, 100)) as $e) {
-						if ($e->getId() === $entity->getId()) {
-							$near = true;
-						}
-					}
-				}
-
-				if ($near == false) {
-					# no players are near this entity
-					$entity->setNameTag("No nearby players");
-					$entity->kill();
-					continue;
-				}
-			}
-		}
-	}
-
-	public function spawnEntity(string $mobname, World $world, Vector3 $pos) {
-		$location = new Location($pos->x, $pos->y, $pos->z, $world, 0, 0);
-
-		if (Main::$instance->attrobj->isFlying($mobname)) {
-			$location = new Location($pos->x, $pos->y+8, $pos->z, $world, 0, 0);
-		}
-
-		$entity = new Main::$instance->classes[$mobname]($location);
-
-		if ($entity == null) {
-			return Main::$instance->getServer()->getLogger()->info("§cError§f spawning mob §d$mobname §r");
-		}
-
-		$entity->spawnToAll();
-	}
-
-	public function isNoSpawn(World $world) {
-		$worldname = $world->getFolderName();
 	
-		foreach (Main::$instance->nospawn as $substr) {
-			if (strpos($worldname, $substr) !== false) {
-				# spawning is not allowed in this world
-				return true;
-			}
+	public function onEntityDamageByEntityEvent(EntityDamageByEntityEvent $event) {
+		$entity = $event->getEntity();
+
+		if (!($entity instanceof Player) && Main::$instance->toolsobj->pluginMobExists($entity->getNetworkTypeId())) {
+			$entity->setScoreTag("1"); // to record player hit for xp
+		}
+	}
+
+	public function onEntityDamageEvent(EntityDamageEvent $event) {
+		$entity = $event->getEntity();
+		
+		if ($entity instanceof MobsEntity) {
+			$entity->damageTag(); // updates tags more often (like when a mob is damaged in fire)
+		}
+	}
+
+	public function onEntityDespawnEvent(EntityDespawnEvent $event) {
+		$entity = $event->getEntity();
+		if (method_exists($entity, "getName") and $entity instanceof Entity) {
+			Main::$instance->toolsobj->spawnMessage($entity, "Despawned");
+		}
+	}
+
+	public function onEntityDeathEvent(EntityDeathEvent $event) {
+		$entity = $event->getEntity();
+		if (method_exists($entity, "getName") and $entity instanceof Entity) {
+			Main::$instance->toolsobj->spawnMessage($entity, "Died");
 		}
 
-		return false;
+		if (Main::$instance->mobdrops && Main::$instance->toolsobj->pluginMobExists($entity->getNetworkTypeId())) {
+			$mobclass = Main::$instance->toolsobj->getPluginMobClass($entity->getNetworkTypeId());
+			try {
+				$drops = [];
+				foreach ($mobclass::drops as $di) {
+					$chance = mt_rand(1, 1000) / 10.0;
+					if ($chance <= $di[2]) {
+						$numitems = mt_rand(1, $di[1]);
+						if ($numitems == 0) {
+							$numitems++; // always at least one item
+						}
+
+						// fire and fire aspect
+						if ($entity->isOnFire()) {
+							$di[0] = str_replace("RAW", "COOKED", $di[0]);
+						}
+
+						$item = StringToItemParser::getInstance()->parse($di[0]);
+						$item->setCount($numitems);
+						array_push($drops, $item);
+					}
+				}
+				$event->setDrops($drops);
+
+				if (Main::$instance->mobexp && $entity->getScoreTag() == "1") {
+					$usualxp = $mobclass::xpamount;
+					$minXp = (int) floor($usualxp * 0.5);
+					$maxXp = (int) ceil($usualxp * 1.5);
+					$event->setXpDropAmount(mt_rand($minXp, $maxXp));
+				}
+			} catch (\Exception $e) {
+				Main::$instance->getServer()->getLogger()->info("Item/XP Drop ERR: " . $e);
+			}
+		}
+	}
+
+	public function onEntitySpawnEvent(EntitySpawnEvent $event) {
+		$entity = $event->getEntity();
+		if ($entity instanceof Entity) {
+			Main::$instance->toolsobj->spawnMessage($entity, "Spawned");
+		}
+	}
+
+	public function onPlayerItemUseEvent(PlayerItemUseEvent $event) {
+		$player = $event->getPlayer();
+		$item = $event->getItem();
+		$direction = $event->getDirectionVector();
+
+		// simplist milk logic fr (anyone wanna deal with raycasts?)
+		if ($item->getVanillaName() == "Bucket" && $player->getWorld()->getNearestEntity($player->getLocation(), 6, Cow::class, false)) {
+			$player->getInventory()->setItemInHand(StringToItemParser::getInstance()->parse("MILK_BUCKET"));
+		}
+
+		// using left click for tags :skull
+		if ($item->getVanillaName() == "Name Tag") {
+			$player->sendMessage("§eLeft click mob to apply name tag!");	
+		}
 	}
 }
