@@ -11,6 +11,24 @@ use pocketmine\world\World;
 use tgwaste\Mobs\Entities\MobsEntity;
 
 class Tools {
+	public function pluginMobExists(string $typeid) { // checks if we have a class for a given mob
+		foreach (Main::$instance->classes as $mentity) {
+			if ($mentity::TYPE_ID == $typeid) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function getPluginMobClass(string $typeid) { // gets the right mob class
+		foreach (Main::$instance->classes as $mentity) {
+			if ($mentity::TYPE_ID == $typeid) {
+				return $mentity;
+			}
+		}
+		return null;
+	}
+
 	public function isDayTime(World $world) : bool {
 		return $world->getSunAngleDegrees() < 90 or $world->getSunAngleDegrees() > 270;
 	}
