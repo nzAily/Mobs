@@ -102,8 +102,12 @@ class MobsEntity extends Living {
 		$maxhealth = $this->getMaxHealth();
 		$percent = (int)(($health * 100.0) / $maxhealth);
 
-		if ($damagetags == true and $percent < 100) {
-			$this->setNameTag("$name §c♥§a $percent §r");
+		if ($damagetags == true and $percent < 20) {
+			$this->setNameTag("$name - §c♥§4 $percent% §r");
+		} else if ($damagetags == true and $percent < 50) {
+			$this->setNameTag("$name - §c♥§e $percent% §r");
+		} else if ($damagetags == true and $percent < 100) {
+			$this->setNameTag("$name - §c♥§a $percent% §r");
 		} else {
 			$damagetags = false;
 			$this->setNameTag($this->getName());
