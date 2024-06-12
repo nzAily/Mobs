@@ -17,7 +17,9 @@ class Main extends PluginBase implements Listener {
 	public $classes;
 	public $damagetags;
 	public $nospawn;
-	public $regainhealth;
+	public $mobdrops = true;
+	public $mobexp = true;
+	public $regainhealthmultiplier = 1;
 	public $spawnmobs;
 	public $spawnmsgs;
 	public $attrobj;
@@ -41,7 +43,9 @@ class Main extends PluginBase implements Listener {
 
 		$this->damagetags = $this->getConfig()->get("damagetags");
 		$this->nospawn = $this->getConfig()->get("nospawn");
-		$this->regainhealth = $this->getConfig()->get("regainhealth");
+		$this->mobdrops = $this->getConfig()->get("mobdrops");
+		$this->mobexp = $this->getConfig()->get("mobexp");
+		$this->regainhealthmultiplier = $this->getConfig()->get("regainhealthmultiplier");
 		$this->spawnmobs = $this->getConfig()->get("spawnmobs");
 		$this->spawnmsgs = $this->getConfig()->get("spawnmsgs");
 
