@@ -19,7 +19,7 @@ use tgwaste\Mobs\Entities\Cow;
 use tgwaste\Mobs\Registrations;
 
 
-class Listen implements Listener {
+class Spawn implements Listener {
 	public function onPlayerJoinEvent(PlayerJoinEvent $event) {
 		//Registrations::registerSpawnEggs($event->getPlayer());
 		// to be added in the future
